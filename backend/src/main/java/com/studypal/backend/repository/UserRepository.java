@@ -1,0 +1,10 @@
+package com.studypal.backend.repository;
+
+import com.studypal.backend.model.User;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UserRepository extends MongoRepository<User, String> {
+    User findByEmail(String email); // Custom query method to find a user by email
+}

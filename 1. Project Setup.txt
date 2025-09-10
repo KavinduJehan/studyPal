@@ -1,0 +1,71 @@
+1. Project Setup
+Action: Ensure your Spring Boot project is set up with Maven.
+Add dependencies for Spring Web, Spring Data JPA, Spring Security, and any other required libraries (e.g., JWT, Lombok).
+Configure application.properties or application.yml for database connection and other settings.
+<hr></hr>
+2. Authentication System
+Action: Implement user registration, login, and JWT-based authentication.
+Create User entity and repository.
+Implement UserDetailsService for Spring Security.
+Configure JWT filters and authentication manager.
+Create endpoints for registration (/api/auth/register), login (/api/auth/login), and logout (/api/auth/logout).
+<hr></hr>
+3. Task Management System
+Action: Implement CRUD operations for tasks.
+Create Task entity and repository.
+Implement service and controller for task management.
+Add endpoints for creating, updating, deleting, and fetching tasks (/api/tasks).
+<hr></hr>
+4. Daily Task Assignment Algorithm
+Action: Implement the algorithm for assigning tasks.
+Create a service to calculate available study time and assign tasks based on priority.
+Add an endpoint (/api/planning/assign-daily-tasks) to trigger the assignment process.
+<hr></hr>
+5. Kanban Board
+Action: Implement backend support for task status updates.
+Add logic to update task status (TODO, IN_PROGRESS, COMPLETED).
+Ensure tasks can be fetched by status for the Kanban board.
+<hr></hr>
+6. Pomodoro Timer
+Action: Implement backend for Pomodoro settings and session tracking.
+Create PomodoroSettings and PomodoroSession entities.
+Add endpoints to fetch/update settings and log sessions (/api/pomodoro/settings, /api/pomodoro/sessions).
+<hr></hr>
+7. Planning Page
+Action: Implement conflict resolution for task assignment.
+Add logic to handle cases where high-priority tasks exceed available time.
+Create a UI for users to manually resolve conflicts.
+<hr></hr>
+8. Personal Diary
+Action: Implement diary entry management.
+Create DiaryEntry entity and repository.
+Add endpoints to create and fetch diary entries (/api/diary).
+<hr></hr>
+9. Dashboard
+Action: Implement widgets for the dashboard.
+Create endpoints to fetch data for upcoming tasks, yesterday's reflection, and daily stats.
+Aggregate data from tasks, diary, and Pomodoro sessions.
+<hr></hr>
+10. Frontend Integration
+Action: Develop the frontend components.
+Use a framework like React or Angular.
+Implement components for authentication, task management, Kanban board, Pomodoro timer, planning, and diary.
+Integrate with the backend API.
+<hr></hr>
+11. Testing
+Action: Write unit and integration tests.
+Use JUnit and Mockito for backend testing.
+Test all endpoints and services.
+Ensure frontend components are tested (if applicable).
+<hr></hr>
+12. Deployment
+Action: Deploy the application.
+Package the Spring Boot application as a JAR or WAR.
+Deploy to a cloud platform like AWS, Azure, or Heroku.
+Use a CI/CD pipeline for automated deployment.
+<hr></hr>
+13. Post-Deployment
+Action: Monitor and maintain the application.
+Set up logging and monitoring (e.g., using Spring Boot Actuator).
+Address bugs and add enhancements based on user feedback.
+<hr></hr> Let me know which step you'd like to start with, and I can provide detailed guidance or code examples!
