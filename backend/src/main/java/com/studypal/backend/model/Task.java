@@ -1,9 +1,7 @@
 package com.studypal.backend.model;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -31,7 +29,8 @@ public class Task {
     @NotBlank(message = "priority is required")
     private String priority; // e.g., HIGH, MEDIUM, LOW
 
-    @Future(message = "deadline must be in the future")
+    private LocalDateTime startDate;
+
     private LocalDateTime deadline;
 
     @Min(value = 0, message = "estimatedHours must be non-negative")

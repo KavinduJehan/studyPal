@@ -42,14 +42,17 @@ public class AuthService implements UserDetailsService {
         );
     }
 
-    public ResponseEntity<String> register(User user) {
+    public ResponseEntity<?> register(User user) {
         if (userRepository.findByEmail(user.getEmail()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists with email: " + user.getEmail());
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
+        User savedUser = userRepository.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new java.util.HashMap<String, Object>() {{
+            put("message", "User registered successfully");
+            put("userId", savedUser.getId());
+        }});
     }
 
     public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
@@ -59,7 +62,7 @@ public class AuthService implements UserDetailsService {
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(new LoginResponse(token));
+        return ResponseEntity.ok(new LoginResponse(token, user.getId(), user.getName(), !user.isProfileCompleted()));
     }
 
 }

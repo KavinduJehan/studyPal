@@ -36,4 +36,29 @@ public class UserService {
     public void deleteUserById(String id) {
         userRepository.deleteById(id);
     }
+
+    // Update a user
+    public User updateUser(String id, User updatedUser) {
+        Optional<User> existingUserOpt = userRepository.findById(id);
+        if (existingUserOpt.isEmpty()) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        
+        User existingUser = existingUserOpt.get();
+        if (updatedUser.getName() != null) {
+            existingUser.setName(updatedUser.getName());
+        }
+        if (updatedUser.getEmail() != null) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+        // Handle profile picture - explicitly set even if null to clear existing picture
+        existingUser.setProfilePicture(updatedUser.getProfilePicture());
+        
+        // Mark profile as completed when user updates their profile
+        existingUser.setProfileCompleted(true);
+        
+        User savedUser = userRepository.save(existingUser);
+        System.out.println("Updated user profile picture: " + (savedUser.getProfilePicture() != null ? "Present" : "Null"));
+        return savedUser;
+    }
 }

@@ -11,6 +11,8 @@ public class User {
     private String name;
     private String email;
     private String password;
+    private String profilePicture; // Base64 encoded image or image URL
+    private boolean profileCompleted = false; // Track if user has completed profile setup
 
     // Constructors
     public User() {}
@@ -52,5 +54,21 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+
+    public void setProfileCompleted(boolean profileCompleted) {
+        this.profileCompleted = profileCompleted;
     }
 }

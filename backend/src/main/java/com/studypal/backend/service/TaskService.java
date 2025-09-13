@@ -3,10 +3,14 @@ package com.studypal.backend.service;
 import com.studypal.backend.model.Task;
 import com.studypal.backend.repository.TaskRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
@@ -38,6 +42,11 @@ public class TaskService {
 
     public Optional<Task> getTaskById(String id) {
         return taskRepository.findById(id);
+    }
+
+    @Cacheable(value = "tasks", key = "#userId + '-' + #page + '-' + #size")
+    public Page<Task> getTasksByUserId(String userId, int page, int size) {
+        return taskRepository.findByUserId(userId, PageRequest.of(page, size));
     }
 
     public Task updateTask(String id, Task updatedTask) {

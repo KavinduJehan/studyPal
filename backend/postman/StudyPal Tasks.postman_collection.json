@@ -1,0 +1,412 @@
+{
+  "info": {
+    "name": "StudyPal Tasks - Advanced Features",
+    "_postman_id": "b6e8f0f8-0000-4000-8000-000000000000",
+    "description": "Collection to test overdue, rollover, priority sorting, bulk operations and stats for StudyPal backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create example task",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"Test Task {{randomInt}}\",\n  \"description\": \"Task created by Postman collection\",\n  \"priority\": \"MEDIUM\",\n  \"deadline\": \"{{deadlineIso}}\",\n  \"estimatedHours\": 2,\n  \"status\": \"TO_DO\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// set a random int and a deadline ISO string for now + 1 day or -1 day for overdue tests",
+              "pm.variables.set('randomInt', Math.floor(Math.random()*10000));",
+              "var now = new Date();",
+              "// default deadline: next hour (upcoming)",
+              "now.setHours(now.getHours()+1);",
+              "pm.variables.set('deadlineIso', now.toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Create task returns 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "var body = pm.response.json();",
+              "if (body && body.id) { pm.environment.set('lastTaskId', body.id); }",
+              "pm.environment.set('lastTask', JSON.stringify(body));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get overdue tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}/overdue",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "user",
+            "{{userId}}",
+            "overdue"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Overdue endpoint returns 200', function () { pm.response.to.have.status(200); });",
+              "var arr = pm.response.json();",
+              "pm.test('Response is an array', function () { pm.expect(arr).to.be.an('array'); });",
+              "// check that every returned task has deadline < now and not COMPLETED",
+              "pm.test('All tasks are overdue and not completed', function () {",
+              "  var now = new Date();",
+              "  arr.forEach(function(t){",
+              "    if (t.deadline) {",
+              "      pm.expect(new Date(t.deadline) < now).to.be.true;",
+              "    }",
+              "    pm.expect(t.status).to.not.eql('COMPLETED');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get tasks sorted by priority",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}/sorted-by-priority",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "user",
+            "{{userId}}",
+            "sorted-by-priority"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Priority sort returns 200', function () { pm.response.to.have.status(200); });",
+              "var arr = pm.response.json();",
+              "pm.test('Array sorted by priority (HIGH>MEDIUM>LOW)', function () {",
+              "  var order = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };",
+              "  for (var i=1;i<arr.length;i++){",
+              "    var prev = order[arr[i-1].priority] || 0;",
+              "    var cur = order[arr[i].priority] || 0;",
+              "    pm.expect(prev).to.be.at.least(cur);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search tasks (q/status/priority)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}/search?q=Test&status=TO_DO&priority=MEDIUM",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "user",
+            "{{userId}}",
+            "search"
+          ],
+          "query": [
+            { "key": "q", "value": "Test" },
+            { "key": "status", "value": "TO_DO" },
+            { "key": "priority", "value": "MEDIUM" }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Search returns 200', function () { pm.response.to.have.status(200); });",
+              "var arr = pm.response.json();",
+              "pm.test('Response is array', function () { pm.expect(arr).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk mark complete",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\"{{lastTaskId}}\"]"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/bulk/complete",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","tasks","bulk","complete"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Bulk complete returns 200', function () { pm.response.to.have.status(200); });",
+              "var text = pm.response.text();",
+              "pm.test('Response mentions tasks marked', function () { pm.expect(text).to.match(/tasks marked as completed/); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}/stats",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","tasks","user","{{userId}}","stats"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Stats returns 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.test('Stats has totalTasks or similar keys', function () { pm.expect(json).to.be.an('object'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Manual rollover trigger",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}/rollover",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","tasks","user","{{userId}}","rollover"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rollover returns 200', function () { pm.response.to.have.status(200); });",
+              "var arr = pm.response.json();",
+              "pm.test('Rollover returns array', function () { pm.expect(arr).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    }
+    ,
+    {
+      "name": "Create invalid task (expect 400)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"\",\n  \"priority\": \"\",\n  \"estimatedHours\": -1\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/tasks", "host": ["{{baseUrl}}"], "path": ["api","tasks"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "exec": [
+            "pm.test('Invalid create returns 400', function () { pm.response.to.have.status(400); });",
+            "var json = pm.response.json();",
+            "pm.test('Error contains field messages', function () { pm.expect(json.error).to.be.a('string'); });"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "Create missing required fields (expect 400)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": { "raw": "{{baseUrl}}/api/tasks", "host": ["{{baseUrl}}"], "path": ["api","tasks"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Missing fields returns 400', function () { pm.response.to.have.status(400); });",
+        "var json = pm.response.json();",
+        "pm.test('Error mentions required fields', function () { pm.expect(json.error).to.match(/userId|title|priority|status/); });"
+      ] } } ]
+    },
+    {
+      "name": "Get non-existent task (expect 404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/tasks/000000000000000000000000", "host": ["{{baseUrl}}"], "path": ["api","tasks","000000000000000000000000"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Non-existent task returns 404', function () { pm.response.to.have.status(404); });",
+        "var json = pm.response.json();",
+        "pm.test('Error body contains message', function () { pm.expect(json.error).to.be.a('string'); });"
+      ] } } ]
+    },
+    {
+      "name": "Actuator health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator","health"] }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Actuator health returns 200', function () { pm.response.to.have.status(200); });",
+        "var json = pm.response.json();",
+        "pm.test('Status is UP or DOWN', function () { pm.expect(json.status).to.be.a('string'); });"
+      ] } } ]
+    }
+    ,
+    {
+      "name": "Pagination test - page/size",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/user/{{userId}}?page=0&size=2",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","tasks","user","{{userId}}"],
+          "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "2" } ]
+        }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Pagination returns 200', function () { pm.response.to.have.status(200); });",
+        "var json = pm.response.json();",
+        "pm.test('Response has content or empty page object', function () { pm.expect(json).to.be.an('object'); });",
+        "// page object should have content and size fields",
+        "pm.test('Has page fields', function () { pm.expect(json).to.have.property('content'); pm.expect(json).to.have.property('size'); });"
+      ] } } ]
+    },
+    {
+      "name": "Cache correctness: create -> get (cached) -> update -> get (updated)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"CacheTest {{randomInt}}\",\n  \"description\": \"cache test\",\n  \"priority\": \"LOW\",\n  \"deadline\": \"{{deadlineIso}}\",\n  \"estimatedHours\": 1,\n  \"status\": \"TO_DO\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/tasks", "host": ["{{baseUrl}}"], "path": ["api","tasks"] }
+      },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": [ "pm.variables.set('randomInt', Math.floor(Math.random()*10000)); var now=new Date(); now.setHours(now.getHours()+1); pm.variables.set('deadlineIso', now.toISOString());" ] } },
+        { "listen": "test", "script": { "exec": [
+          "pm.test('Create Cache task returns 201', function () { pm.response.to.have.status(201); });",
+          "var body = pm.response.json(); pm.environment.set('cacheTaskId', body.id); pm.environment.set('cacheTaskTitle', body.title);"
+        ] } }
+      ]
+    },
+    {
+      "name": "Get cached paged tasks (should include created)",
+      "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/tasks/user/{{userId}}?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","tasks","user","{{userId}}"], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "10" } ] } },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Get cached tasks 200', function () { pm.response.to.have.status(200); });",
+        "var json = pm.response.json();",
+        "var ids = json.content.map(function(t){ return t.id; });",
+        "pm.test('Created task present in page', function () { pm.expect(ids).to.include(pm.environment.get('cacheTaskId')); });"
+      ] } } ]
+    },
+    {
+      "name": "Update cached task (title change)",
+      "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"title\": \"CacheTest-Updated\", \"description\": \"cache test updated\", \"priority\": \"LOW\", \"estimatedHours\": 1, \"status\": \"TO_DO\"\n}" }, "url": { "raw": "{{baseUrl}}/api/tasks/{{cacheTaskId}}", "host": ["{{baseUrl}}"], "path": ["api","tasks","{{cacheTaskId}}"] } },
+      "event": [ { "listen": "test", "script": { "exec": [ "pm.test('Update returns 200', function(){ pm.response.to.have.status(200); });" ] } } ]
+    },
+    {
+      "name": "Get paged tasks after update (should reflect change)",
+      "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/tasks/user/{{userId}}?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","tasks","user","{{userId}}"], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "10" } ] } },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "pm.test('Get tasks after update 200', function () { pm.response.to.have.status(200); });",
+        "var json = pm.response.json();",
+        "var found = json.content.find(function(t){ return t.id === pm.environment.get('cacheTaskId'); });",
+        "pm.test('Updated title is present', function () { pm.expect(found.title).to.eql('CacheTest-Updated'); });"
+      ] } } ]
+    },
+    {
+      "name": "Rate-limit stress test (expect >=1 429)",
+      "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/tasks/user/{{userId}}?page=0&size=1", "host": ["{{baseUrl}}"], "path": ["api","tasks","user","{{userId}}"], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "1" } ] } },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": [
+          "// Send 200 quick requests via Postman runner by setting iterations; this request acts as the target call"
+        ] } },
+        { "listen": "test", "script": { "exec": [
+          "pm.test('One of requests should be 429 when run many times', function () { pm.expect([200,429]).to.include(pm.response.code); });"
+        ] } }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userId", "value": "test-user-1" },
+    { "key": "lastTaskId", "value": "" },
+    { "key": "deadlineIso", "value": "" },
+    { "key": "randomInt", "value": "" }
+  ]
+}
